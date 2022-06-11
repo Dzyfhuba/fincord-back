@@ -1,39 +1,33 @@
+const { faker } = require('@faker-js/faker');
 const User = require('../../models/User');
 const Saving = require('../../models/Saving');
-const {faker} = require('@faker-js/faker');
 
 /**
  * @param { import("knex").Knex } knex
- * @returns { Promise<void> } 
+ * @returns { Promise<void> }
  */
-exports.seed = async function(knex) {
-    // Deletes ALL existing entries
-    await knex('saving_records').del();
+exports.seed = async function (knex) {
+  // Deletes ALL existing entries
+  await knex('saving_records').del();
 
-    const users = await User.all();
-    for (let i = 0; i < 100; i++) {
-        for (let j = 0; j < 5; j++) {
-            const user = users[i];
+  const users = await User.all();
 
-            const savings = await Saving.getAllByUserId(user.id);
+  const savingRecords = [];
 
-            const save = [];
-            for (let k = 0; k < Math.floor(Math.random() * 10) + 1; k++) {
-                save.push({
-                    amount: Math.floor(Math.random() * 1000000) + 1000000,
-                    date: faker.date.soon(),
-                });
-            }
+  for (let i = 0; i < users.length; i += 1) {
+    const user = users[i];
 
-            savings.forEach(async (saving) => {
-                await knex('saving_records').insert([
-                    {
-                        user_id: user.id,
-                        saving_plan_id: saving.id,
-                        save: JSON.stringify(save),
-                    }
-                ]);
-            });
-        }
-    }
+    // eslint-disable-next-line no-await-in-loop
+    const saving = await Saving.all(user.id);
+
+    const savingRecord = {
+      user_id: user.id,
+      saving_id: saving.id,
+      amount: faker.finance.amount(saving.min_amount, saving.max_amount),
+    };
+
+    savingRecords.push(savingRecord);
+  }
+
+  await knex('saving_records').insert(savingRecords);
 };
